@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Monthly summary</title></head>
+<body style="font-family:Segoe UI,Arial,sans-serif;padding:24px;">
+  <h2>FlyPro monthly summary</h2>
+  <p>Automated executive overview for the last 30 days.</p>
+  <p th:if="${totalEmployees != null}">Employees: <span th:text="${totalEmployees}"></span></p>
+  <p th:if="${openAlerts != null}">Open alerts: <span th:text="${openAlerts}"></span></p>
+</body>
+</html>

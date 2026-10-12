@@ -1,0 +1,58 @@
+@startuml ha-architecture
+!theme plain
+title FlyPro Analytics – Enterprise HA Architecture (Phase 6 · Step 20)
+
+skinparam componentStyle rectangle
+
+actor User
+cloud "Edge" {
+  [Nginx API Gateway\nTLS · Rate Limit · Routing] as GW
+  [Nginx LB\nmulti upstream] as LB
+}
+
+node "App tier" {
+  [Backend pod 1] as B1
+  [Backend pod 2] as B2
+  [AI pod 1] as A1
+  [AI pod 2] as A2
+}
+
+database "Data" {
+  database "MySQL Primary" as MP
+  database "MySQL Replica\n(read)" as MR
+  database "Redis" as RD
+  queue "RabbitMQ\n+ DLQ" as RQ
+}
+
+node "Observability" {
+  [Prometheus] as PR
+  [Grafana] as GR
+  [Jaeger / OTEL] as JA
+}
+
+User --> GW
+GW --> LB
+LB --> B1
+LB --> B2
+LB --> A1
+LB --> A2
+B1 --> MP
+B2 --> MP
+B1 ..> MR : optional reads
+B1 --> RD
+B2 --> RD
+B1 --> RQ
+B2 --> RQ
+B1 --> A1
+B1 --> A2
+B1 --> PR
+B1 --> JA
+PR --> GR
+
+note right of B1
+  Resilience4j → AI
+  Graceful shutdown
+  Correlation IDs
+end note
+
+@enduml

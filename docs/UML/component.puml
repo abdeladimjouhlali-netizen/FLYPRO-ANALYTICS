@@ -1,0 +1,31 @@
+@startuml FlyPro_Component
+!theme plain
+title FlyPro Analytics — Diagramme de composants
+
+package "Client" {
+  [React SPA] as SPA
+}
+
+package "Gateway" {
+  [Nginx] as NGX
+}
+
+package "Application Services" {
+  [Spring Boot API] as API
+  [FastAPI AI] as AI
+}
+
+package "Data" {
+  database "MySQL 8" as MYSQL
+  folder "Model Artifacts" as MODELS
+}
+
+SPA --> NGX : HTTPS/HTTP
+NGX --> API : /api
+NGX --> AI : /ai-api
+API --> MYSQL : JDBC
+API --> AI : REST (optionnel)
+AI --> MODELS : Joblib R/W
+SPA --> NGX : static assets
+
+@enduml

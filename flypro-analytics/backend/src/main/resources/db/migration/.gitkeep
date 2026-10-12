@@ -1,0 +1,3 @@
+# Flyway migrations directory
+# Rôle futur : scripts SQL versionnés (V1__init.sql, V2__..., etc.).
+# Aucune migration générée à ce stade — le schéma sera ajouté module par module.

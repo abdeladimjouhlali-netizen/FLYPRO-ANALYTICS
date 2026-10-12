@@ -1,0 +1,29 @@
+# =============================================================================
+# FlyPro Analytics – application-prod.yml
+# Rôle : profil production (credentials via variables d'environnement uniquement).
+# =============================================================================
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    baseline-on-migrate: false
+
+logging:
+  level:
+    root: WARN
+    com.flypro.analytics: INFO
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never

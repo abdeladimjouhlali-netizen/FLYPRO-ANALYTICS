@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Weekly summary</title></head>
+<body style="font-family:Segoe UI,Arial,sans-serif;padding:24px;">
+  <h2>FlyPro weekly summary</h2>
+  <p>Period: <span th:text="${from}">from</span> → <span th:text="${to}">to</span></p>
+  <ul>
+    <li th:each="entry : ${#maps.containsKey(summary) ? summary : {}}" th:text="${entry}">kpi</li>
+  </ul>
+  <p th:if="${totalEmployees != null}">Total employees: <span th:text="${totalEmployees}"></span></p>
+  <p th:if="${grantedAccesses != null}">Granted accesses: <span th:text="${grantedAccesses}"></span></p>
+</body>
+</html>

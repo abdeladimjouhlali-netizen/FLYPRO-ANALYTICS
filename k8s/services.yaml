@@ -1,0 +1,72 @@
+# ClusterIP Services – DNS names match Compose / Nginx upstreams
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: flypro
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/part-of: flypro-analytics
+spec:
+  type: ClusterIP
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+  selector:
+    app.kubernetes.io/name: mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: flypro
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: flypro-analytics
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/actuator/prometheus"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: flypro
+  labels:
+    app.kubernetes.io/name: ai-service
+    app.kubernetes.io/part-of: flypro-analytics
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: ai-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: flypro
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: flypro-analytics
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: frontend

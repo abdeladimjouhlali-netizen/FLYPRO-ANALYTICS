@@ -1,0 +1,218 @@
+@startuml FlyPro_ERD
+!theme plain
+skinparam linetype ortho
+title FlyPro Analytics — Modèle entité-relation (ERD)
+
+entity roles {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(50) <<UK>>
+  description : VARCHAR(255)
+  created_at : DATETIME(6)
+  updated_at : DATETIME(6)
+  created_by : VARCHAR(100)
+  updated_by : VARCHAR(100)
+}
+
+entity users {
+  * id : BIGINT <<PK>>
+  --
+  * username : VARCHAR(50) <<UK>>
+  * email : VARCHAR(255) <<UK>>
+  * password : VARCHAR(255)
+  * enabled : BOOLEAN
+  * account_locked : BOOLEAN
+  * role_id : BIGINT <<FK>>
+  created_at : DATETIME(6)
+  updated_at : DATETIME(6)
+}
+
+entity refresh_tokens {
+  * id : BIGINT <<PK>>
+  --
+  * token : VARCHAR(768) <<UK>>
+  * user_id : BIGINT <<FK>>
+  * expires_at : DATETIME(6)
+  * revoked : BOOLEAN
+  created_at : DATETIME(6)
+}
+
+entity departments {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(150) <<UK>>
+  * code : VARCHAR(50) <<UK>>
+  description : VARCHAR(500)
+  * active : BOOLEAN
+}
+
+entity access_profiles {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(150) <<UK>>
+  description : VARCHAR(500)
+  * security_level : VARCHAR(30)
+  * start_time : TIME
+  * end_time : TIME
+}
+
+entity employees {
+  * id : BIGINT <<PK>>
+  --
+  * employee_number : VARCHAR(50) <<UK>>
+  * first_name : VARCHAR(100)
+  * last_name : VARCHAR(100)
+  * email : VARCHAR(255) <<UK>>
+  phone : VARCHAR(30)
+  * position : VARCHAR(150)
+  * status : VARCHAR(30)
+  * department_id : BIGINT <<FK>>
+  access_profile_id : BIGINT <<FK>>
+}
+
+entity badges {
+  * id : BIGINT <<PK>>
+  --
+  * badge_number : VARCHAR(100) <<UK>>
+  * status : VARCHAR(30)
+  * type : VARCHAR(30)
+  * issue_date : DATE
+  expiration_date : DATE
+}
+
+entity badge_assignments {
+  * id : BIGINT <<PK>>
+  --
+  * badge_id : BIGINT <<FK>>
+  * employee_id : BIGINT <<FK>>
+  * assigned_at : DATETIME(6)
+  returned_at : DATETIME(6)
+  * active : BOOLEAN
+}
+
+entity zones {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(150)
+  * building : VARCHAR(150)
+  * floor : VARCHAR(50)
+  * is_sensitive : BOOLEAN
+  description : VARCHAR(500)
+  --
+  <<UK name,building,floor>>
+}
+
+entity access_profile_zones {
+  * access_profile_id : BIGINT <<FK>>
+  * zone_id : BIGINT <<FK>>
+  --
+  <<PK composite>>
+}
+
+entity access_points {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(150) <<UK>>
+  * code : VARCHAR(50) <<UK>>
+  * type : VARCHAR(30)
+  * status : VARCHAR(30)
+  ip_address : VARCHAR(45)
+  location : VARCHAR(255)
+  * zone_id : BIGINT <<FK>>
+}
+
+entity access_events {
+  * id : BIGINT <<PK>>
+  --
+  * event_timestamp : DATETIME(6)
+  * direction : VARCHAR(30)
+  * result : VARCHAR(30)
+  refusal_reason : VARCHAR(500)
+  * source : VARCHAR(30)
+  raw_payload : TEXT
+  * badge_id : BIGINT <<FK>>
+  employee_id : BIGINT <<FK>>
+  * access_point_id : BIGINT <<FK>>
+  * zone_id : BIGINT <<FK>>
+}
+
+entity alerts {
+  * id : BIGINT <<PK>>
+  --
+  * title : VARCHAR(200)
+  description : VARCHAR(2000)
+  * severity : VARCHAR(30)
+  * status : VARCHAR(30)
+  * type : VARCHAR(50)
+  * created_date : DATETIME(6)
+  resolved_date : DATETIME(6)
+  resolved_by : VARCHAR(100)
+  employee_id : BIGINT <<FK>>
+  badge_id : BIGINT <<FK>>
+  access_event_id : BIGINT <<FK>>
+}
+
+entity import_batches {
+  * id : BIGINT <<PK>>
+  --
+  * file_name : VARCHAR(255)
+  source : VARCHAR(100)
+  * status : VARCHAR(30)
+  total_records : INT
+  valid_records : INT
+  invalid_records : INT
+  duplicate_records : INT
+  started_at : DATETIME(6)
+  finished_at : DATETIME(6)
+}
+
+entity data_quality_issues {
+  * id : BIGINT <<PK>>
+  --
+  * import_batch_id : BIGINT <<FK>>
+  line_number : INT
+  field_name : VARCHAR(100)
+  * message : VARCHAR(500)
+  * severity : VARCHAR(30)
+}
+
+entity anomaly_scores {
+  * id : BIGINT <<PK>>
+  --
+  * access_event_id : BIGINT <<FK>>
+  * score : DECIMAL(10,6)
+  algorithm : VARCHAR(100)
+  prediction : VARCHAR(50)
+}
+
+entity audit_logs {
+  * id : BIGINT <<PK>>
+  --
+  * action : VARCHAR(100)
+  * entity_name : VARCHAR(100)
+  entity_id : VARCHAR(50)
+  username : VARCHAR(100)
+  ip_address : VARCHAR(45)
+  details : TEXT
+}
+
+roles ||--o{ users
+users ||--o{ refresh_tokens
+departments ||--o{ employees
+access_profiles ||--o{ employees
+access_profiles ||--o{ access_profile_zones
+zones ||--o{ access_profile_zones
+zones ||--o{ access_points
+badges ||--o{ badge_assignments
+employees ||--o{ badge_assignments
+badges ||--o{ access_events
+employees ||--o{ access_events
+access_points ||--o{ access_events
+zones ||--o{ access_events
+employees ||--o{ alerts
+badges ||--o{ alerts
+access_events ||--o{ alerts
+import_batches ||--o{ data_quality_issues
+access_events ||--o{ anomaly_scores
+
+@enduml

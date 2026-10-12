@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Badge expiration</title></head>
+<body style="font-family:Segoe UI,Arial,sans-serif;padding:24px;">
+  <h2>Badge expiration report</h2>
+  <p><span th:text="${count}">0</span> badge(s) expire within the monitoring window.</p>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+    <thead>
+      <tr style="background:#1e3a5f;color:#fff;">
+        <th>Badge</th><th>Status</th><th>Expiration</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="b : ${badges}">
+        <td th:text="${b['badgeNumber']}">B-001</td>
+        <td th:text="${b['status']}">ACTIVE</td>
+        <td th:text="${b['expirationDate']}">2026-08-01</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

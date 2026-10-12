@@ -1,0 +1,31 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+!**/.env.example
+
+# Logs & runtime
+*.log
+logs/
+**/artifacts/models/*.joblib
+**/artifacts/models/latest.json
+
+# Node / Python / Java
+**/node_modules/
+**/dist/
+**/.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+**/target/
+**/.mypy_cache/
+
+# Docker
+*.pid

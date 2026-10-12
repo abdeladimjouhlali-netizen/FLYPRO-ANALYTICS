@@ -1,0 +1,18 @@
+# FlyPro Analytics – Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flypro
+  labels:
+    app.kubernetes.io/part-of: flypro-analytics
+    app.kubernetes.io/managed-by: manifests
+    environment: production
+---
+# Optional observability namespace (Prometheus / Grafana / Jaeger)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flypro-observability
+  labels:
+    app.kubernetes.io/part-of: flypro-analytics
+    purpose: observability

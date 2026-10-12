@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Royal Air Maroc — design tokens */
+@theme {
+  --font-sans: "Montserrat", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+
+  /* Signature RAM red */
+  --color-brand-50: #fff1f3;
+  --color-brand-100: #ffe0e6;
+  --color-brand-200: #ffc6d0;
+  --color-brand-300: #f994a8;
+  --color-brand-400: #ed5674;
+  --color-brand-500: #d82248;
+  --color-brand-600: #c2002f;
+  --color-brand-700: #a10028;
+  --color-brand-800: #860925;
+  --color-brand-900: #710d24;
+
+  --color-ink-50: #f7f5f4;
+  --color-ink-100: #ebe7e4;
+  --color-ink-200: #d4cdc8;
+  --color-ink-300: #b3a89f;
+  --color-ink-400: #8f8177;
+  --color-ink-500: #74675e;
+  --color-ink-600: #5e534c;
+  --color-ink-700: #4d4440;
+  --color-ink-800: #423b38;
+  --color-ink-900: #3a3331;
+  --color-ink-950: #1c1817;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f3f1;
+  --color-border: #e4ddd8;
+  --color-danger: #c2002f;
+  --color-warning: #b45309;
+  --color-success: #0f766e;
+  --color-gold: #c4a35a;
+}
+
+.dark {
+  --color-surface: #161211;
+  --color-surface-muted: #1e1917;
+  --color-border: #3a302c;
+  --color-ink-50: #1c1817;
+  --color-ink-900: #f3eeea;
+  --color-ink-950: #faf7f5;
+}
+
+@layer base {
+  * {
+    @apply border-[var(--color-border)];
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-[var(--color-surface-muted)] font-sans text-[var(--color-ink-900)] antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 100% -10%, rgba(194, 0, 47, 0.08), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 0% 100%, rgba(196, 163, 90, 0.06), transparent 50%);
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  ::selection {
+    background: rgba(194, 0, 47, 0.2);
+  }
+}
+
+@layer utilities {
+  /* Style du wordmark « royal air maroc » du logo */
+  .ram-wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+  }
+
+  .ram-mesh {
+    background:
+      radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.18), transparent 42%),
+      radial-gradient(circle at 88% 10%, rgba(196, 163, 90, 0.22), transparent 38%),
+      linear-gradient(145deg, #860925 0%, #c2002f 42%, #710d24 100%);
+  }
+
+  .ram-stripes {
+    background-image: repeating-linear-gradient(
+      -18deg,
+      transparent,
+      transparent 14px,
+      rgba(255, 255, 255, 0.04) 14px,
+      rgba(255, 255, 255, 0.04) 15px
+    );
+  }
+}

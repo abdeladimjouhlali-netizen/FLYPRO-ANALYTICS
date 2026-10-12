@@ -1,0 +1,25 @@
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Artifacts & env
+artifacts/models/*.joblib
+artifacts/models/latest.json
+.env
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

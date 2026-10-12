@@ -1,0 +1,58 @@
+# =============================================================================
+# FlyPro Analytics – docker-compose.yml
+# Orchestration locale : MySQL + Backend Spring Boot.
+# =============================================================================
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: flypro-mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flypro_analytics}
+      MYSQL_USER: ${MYSQL_USER:-flypro}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-flypro}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - flypro_mysql_data:/var/lib/mysql
+    networks:
+      - flypro-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flypro-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DATABASE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-flypro_analytics}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DATABASE_USERNAME: ${MYSQL_USER:-flypro}
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD:-flypro}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-not-for-production-use-32b+}
+      SERVER_PORT: 8080
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      AI_SERVICE_URL: ${AI_SERVICE_URL:-http://localhost:8000}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - flypro-network
+
+volumes:
+  flypro_mysql_data:
+    name: flypro_mysql_data
+
+networks:
+  flypro-network:
+    name: flypro-network
+    driver: bridge

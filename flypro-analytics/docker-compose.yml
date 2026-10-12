@@ -1,0 +1,66 @@
+# =============================================================================
+# FlyPro Analytics – docker-compose.yml
+# Rôle : orchestrer PostgreSQL, backend, frontend et AI service en local.
+# Aucune logique métier — infrastructure de développement / démo.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flypro-postgres
+    environment:
+      POSTGRES_DB: flypro_analytics
+      POSTGRES_USER: flypro
+      POSTGRES_PASSWORD: flypro
+    ports:
+      - "5432:5432"
+    volumes:
+      - flypro_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flypro -d flypro_analytics"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: flypro-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: flypro_analytics
+      DB_USER: flypro
+      DB_PASSWORD: flypro
+      AI_SERVICE_URL: http://ai-service:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: flypro-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.fastapi
+    container_name: flypro-ai
+    ports:
+      - "8000:8000"
+
+volumes:
+  flypro_pg_data:
+    name: flypro_pg_data

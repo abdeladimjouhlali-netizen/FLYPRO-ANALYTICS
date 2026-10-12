@@ -1,0 +1,179 @@
+@startuml FlyPro_Class
+!theme plain
+skinparam classAttributeIconSize 0
+title FlyPro Analytics — Diagramme de classes (domaine)
+
+abstract class BaseAuditableEntity {
+  +id: Long
+  +createdAt: Instant
+  +updatedAt: Instant
+  +createdBy: String
+  +updatedBy: String
+}
+
+class Role {
+  +name: RoleName
+  +description: String
+}
+
+class User {
+  +username: String
+  +email: String
+  +password: String
+  +enabled: boolean
+  +accountLocked: boolean
+}
+
+class RefreshToken {
+  +id: Long
+  +token: String
+  +expiresAt: Instant
+  +revoked: boolean
+  +createdAt: Instant
+}
+
+class Department {
+  +name: String
+  +code: String
+  +description: String
+  +active: boolean
+}
+
+class Employee {
+  +employeeNumber: String
+  +firstName: String
+  +lastName: String
+  +email: String
+  +phone: String
+  +position: String
+  +status: EmployeeStatus
+}
+
+class AccessProfile {
+  +name: String
+  +description: String
+  +securityLevel: SecurityLevel
+  +startTime: LocalTime
+  +endTime: LocalTime
+}
+
+class Zone {
+  +name: String
+  +building: String
+  +floor: String
+  +sensitive: boolean
+  +description: String
+}
+
+class AccessPoint {
+  +name: String
+  +code: String
+  +type: AccessPointType
+  +status: AccessPointStatus
+  +ipAddress: String
+  +location: String
+}
+
+class Badge {
+  +badgeNumber: String
+  +status: BadgeStatus
+  +type: BadgeType
+  +issueDate: LocalDate
+  +expirationDate: LocalDate
+}
+
+class BadgeAssignment {
+  +assignedAt: Instant
+  +returnedAt: Instant
+  +active: boolean
+}
+
+class AccessEvent {
+  +eventTimestamp: Instant
+  +direction: AccessDirection
+  +result: AccessResult
+  +refusalReason: String
+  +source: EventSource
+  +rawPayload: String
+}
+
+class Alert {
+  +title: String
+  +description: String
+  +severity: AlertSeverity
+  +status: AlertStatus
+  +type: AlertType
+  +createdDate: Instant
+  +resolvedDate: Instant
+  +resolvedBy: String
+}
+
+class ImportBatch {
+  +fileName: String
+  +source: String
+  +status: ImportStatus
+  +totalRecords: int
+  +validRecords: int
+  +invalidRecords: int
+  +duplicateRecords: int
+  +startedAt: Instant
+  +finishedAt: Instant
+}
+
+class DataQualityIssue {
+  +lineNumber: Integer
+  +fieldName: String
+  +message: String
+  +severity: AlertSeverity
+}
+
+class AnomalyScore {
+  +score: BigDecimal
+  +algorithm: String
+  +prediction: String
+}
+
+class AuditLog {
+  +action: String
+  +entityName: String
+  +entityId: String
+  +username: String
+  +ipAddress: String
+  +details: String
+}
+
+Role --|> BaseAuditableEntity
+User --|> BaseAuditableEntity
+Department --|> BaseAuditableEntity
+Employee --|> BaseAuditableEntity
+AccessProfile --|> BaseAuditableEntity
+Zone --|> BaseAuditableEntity
+AccessPoint --|> BaseAuditableEntity
+Badge --|> BaseAuditableEntity
+BadgeAssignment --|> BaseAuditableEntity
+AccessEvent --|> BaseAuditableEntity
+Alert --|> BaseAuditableEntity
+ImportBatch --|> BaseAuditableEntity
+DataQualityIssue --|> BaseAuditableEntity
+AnomalyScore --|> BaseAuditableEntity
+AuditLog --|> BaseAuditableEntity
+
+Role "1" <-- "0..*" User : role
+User "1" <-- "0..*" RefreshToken : user
+Department "1" <-- "0..*" Employee : department
+AccessProfile "0..1" <-- "0..*" Employee : accessProfile
+AccessProfile "0..*" -- "0..*" Zone : zones
+Zone "1" <-- "0..*" AccessPoint : zone
+Badge "1" <-- "0..*" BadgeAssignment : badge
+Employee "1" <-- "0..*" BadgeAssignment : employee
+Badge "1" <-- "0..*" AccessEvent : badge
+Employee "0..1" <-- "0..*" AccessEvent : employee
+AccessPoint "1" <-- "0..*" AccessEvent : accessPoint
+Zone "1" <-- "0..*" AccessEvent : zone
+Employee "0..1" <-- "0..*" Alert : employee
+Badge "0..1" <-- "0..*" Alert : badge
+AccessEvent "0..1" <-- "0..*" Alert : accessEvent
+ImportBatch "1" <-- "0..*" DataQualityIssue : importBatch
+AccessEvent "1" <-- "0..*" AnomalyScore : accessEvent
+
+@enduml

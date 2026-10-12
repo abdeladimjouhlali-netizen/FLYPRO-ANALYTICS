@@ -1,0 +1,3 @@
+﻿# Feature imports / hooks
+# Rôle futur : Hooks métier de la feature (TanStack Query, etc.).
+# Aucune logique métier pour l'instant.

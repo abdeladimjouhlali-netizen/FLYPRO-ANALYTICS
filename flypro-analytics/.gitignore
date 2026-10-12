@@ -1,0 +1,73 @@
+# =========================
+# FlyPro Analytics – .gitignore
+# Rôle : exclure artefacts de build, dépendances, secrets et IDE
+# =========================
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Backend (Maven / Java) ---
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+replay_pid*
+
+# --- Frontend (Node / Vite) ---
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- AI Service (Python) ---
+ai-service/__pycache__/
+ai-service/**/__pycache__/
+ai-service/.venv/
+ai-service/venv/
+ai-service/*.pyc
+ai-service/.pytest_cache/
+ai-service/.mypy_cache/
+ai-service/.ruff_cache/
+ai-service/*.egg-info/
+ai-service/.coverage
+ai-service/htmlcov/
+ai-service/models/*.pkl
+ai-service/models/*.joblib
+
+# --- Docker / logs ---
+*.log
+logs/
+docker/data/
+postgres-data/
+
+# --- Docs build ---
+docs/_build/
+docs/site/

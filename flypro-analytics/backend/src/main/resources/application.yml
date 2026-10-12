@@ -1,0 +1,37 @@
+# =============================================================================
+# FlyPro Analytics – application.yml (profil commun)
+# Rôle : configuration de base partagée ; les profils dev/prod surchargent
+# les valeurs sensibles. Aucune logique métier.
+# =============================================================================
+
+spring:
+  application:
+    name: flypro-analytics-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+
+# Documentation OpenAPI (activée plus tard via OpenApiConfig)
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Placeholder pour l'intégration future avec le microservice IA
+flypro:
+  ai-service:
+    base-url: ${AI_SERVICE_URL:http://localhost:8000}

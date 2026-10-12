@@ -1,0 +1,69 @@
+# TLS-ready Ingress (nginx ingress controller)
+# Create TLS secret: kubectl create secret tls flypro-tls --cert=fullchain.pem --key=privkey.pem -n flypro
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flypro-ingress
+  namespace: flypro
+  labels:
+    app.kubernetes.io/part-of: flypro-analytics
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "55m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Rate limit at edge (requests/sec per IP)
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-connections: "20"
+    # Optional cert-manager
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  # ingressClassName: nginx
+  tls:
+    - hosts:
+        - flypro.example.com
+      secretName: flypro-tls
+  rules:
+    - host: flypro.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+---
+# Optional dedicated path split if frontend does not proxy (usually not needed)
+# Kept for HA edge patterns / multi-ingress setups
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flypro-ingress-internal-docs
+  namespace: flypro
+  labels:
+    app.kubernetes.io/part-of: flypro-analytics
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - flypro.example.com
+      secretName: flypro-tls
+  rules:
+    - host: flypro.example.com
+      http:
+        paths:
+          # Direct AI docs only on private networks – disable in public prod if unused
+          - path: /internal-ai(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8000

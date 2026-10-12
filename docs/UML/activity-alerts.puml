@@ -1,0 +1,22 @@
+@startuml FlyPro_Activity_Alerts
+!theme plain
+title FlyPro Analytics — Activité : cycle de vie d'une alerte
+
+start
+:Détection / création alerte\n(status OPEN);
+:Analyste consulte\nGET /api/v1/alerts;
+:Ouvre le détail;
+
+if (Action admin ?) then (Acknowledge)
+  :PATCH .../acknowledge;
+elseif (Resolve) then
+  :PATCH .../resolve;
+else (Close)
+  :PATCH .../close;
+endif
+
+:Mettre à jour statut en base;
+:Notifier UI (toast / refresh);
+stop
+
+@enduml

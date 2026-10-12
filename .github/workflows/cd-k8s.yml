@@ -1,0 +1,172 @@
+name: FlyPro CD – Publish & Kubernetes Deploy
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+      image_tag:
+        description: Image tag override (default = git sha)
+        required: false
+        default: ""
+
+concurrency:
+  group: flypro-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/flypro
+
+jobs:
+  publish:
+    name: Build & publish Docker images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: meta
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./flypro-backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push AI
+        uses: docker/build-push-action@v6
+        with:
+          context: ./flypro-ai
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./flypro-frontend
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=
+            VITE_AI_BASE_URL=/ai-api
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [publish]
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Record previous image (rollback info)
+        id: prev
+        run: |
+          PREV=$(kubectl get deploy backend -n flypro -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "none")
+          echo "image=${PREV}" >> "$GITHUB_OUTPUT"
+          echo "Previous backend image: ${PREV}"
+
+      - name: Apply manifests (kustomize)
+        env:
+          TAG: ${{ needs.publish.outputs.tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          cd k8s
+          # Patch image names to match GHCR owner
+          sed -i "s|ghcr.io/flypro/flypro-backend|ghcr.io/${OWNER}/flypro-backend|g" *.yaml kustomization.yaml || true
+          sed -i "s|ghcr.io/flypro/flypro-ai|ghcr.io/${OWNER}/flypro-ai|g" *.yaml kustomization.yaml || true
+          sed -i "s|ghcr.io/flypro/flypro-frontend|ghcr.io/${OWNER}/flypro-frontend|g" *.yaml kustomization.yaml || true
+          kubectl apply -k .
+          kubectl -n flypro set image deployment/backend backend=ghcr.io/${OWNER}/flypro-backend:${TAG}
+          kubectl -n flypro set image deployment/ai-service ai=ghcr.io/${OWNER}/flypro-ai:${TAG}
+          kubectl -n flypro set image deployment/frontend frontend=ghcr.io/${OWNER}/flypro-frontend:${TAG}
+
+      - name: Wait for rollouts
+        run: |
+          kubectl -n flypro rollout status deployment/backend --timeout=300s
+          kubectl -n flypro rollout status deployment/ai-service --timeout=300s
+          kubectl -n flypro rollout status deployment/frontend --timeout=300s
+
+      - name: Health verification
+        run: |
+          kubectl -n flypro wait --for=condition=ready pod -l app.kubernetes.io/name=backend --timeout=180s
+          kubectl -n flypro wait --for=condition=ready pod -l app.kubernetes.io/name=ai-service --timeout=180s
+          kubectl -n flypro wait --for=condition=ready pod -l app.kubernetes.io/name=frontend --timeout=180s
+          # Port-forward smoke
+          kubectl -n flypro port-forward svc/backend 18080:8080 &
+          PF_PID=$!
+          sleep 5
+          curl -fsS http://127.0.0.1:18080/actuator/health | tee /tmp/health.json
+          grep -q '"status":"UP"' /tmp/health.json
+          kill ${PF_PID} || true
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          PREV: ${{ steps.prev.outputs.image }}
+        run: |
+          echo "Deployment failed – attempting rollback"
+          if [ "${PREV}" != "none" ] && [ -n "${PREV}" ]; then
+            kubectl -n flypro set image deployment/backend backend="${PREV}"
+            kubectl -n flypro rollout undo deployment/backend || true
+            kubectl -n flypro rollout undo deployment/ai-service || true
+            kubectl -n flypro rollout undo deployment/frontend || true
+            kubectl -n flypro rollout status deployment/backend --timeout=180s || true
+          else
+            kubectl -n flypro rollout undo deployment/backend || true
+            kubectl -n flypro rollout undo deployment/ai-service || true
+            kubectl -n flypro rollout undo deployment/frontend || true
+          fi

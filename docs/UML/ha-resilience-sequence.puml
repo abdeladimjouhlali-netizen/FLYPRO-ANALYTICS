@@ -1,0 +1,22 @@
+@startuml ha-resilience-sequence
+!theme plain
+title AI call with Circuit Breaker + Fallback
+
+participant "Backend" as B
+participant "ResilientAiServiceClient" as C
+participant "CircuitBreaker" as CB
+participant "FastAPI AI" as AI
+
+B -> C : health() / predictAsync()
+C -> CB : decorate
+alt Circuit CLOSED and AI OK
+  CB -> AI : HTTP
+  AI --> CB : 200
+  CB --> C : body
+  C --> B : response
+else Circuit OPEN or AI down
+  CB -> C : fallbackMethod
+  C --> B : DEGRADED / NORMAL fallback\n(API contract preserved)
+end
+
+@enduml

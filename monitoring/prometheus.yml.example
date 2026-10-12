@@ -1,0 +1,21 @@
+# Example Prometheus scrape config (monitoring preparation)
+# Not started by default — wire into your observability stack when ready.
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: flypro-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["backend:8080"]
+
+  - job_name: flypro-ai
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["ai-service:8000"]
+
+  - job_name: flypro-frontend
+    metrics_path: /healthz
+    static_configs:
+      - targets: ["frontend:80"]

@@ -1,0 +1,66 @@
+@startuml FlyPro_UseCase
+!theme plain
+title FlyPro Analytics — Diagramme de cas d'utilisation
+
+left to right direction
+
+actor "Super Admin" as SA
+actor "Admin" as AD
+actor "Analyste" as AN
+
+rectangle "FlyPro Analytics" {
+  usecase "Se connecter" as UC_LOGIN
+  usecase "Gérer les employés" as UC_EMP
+  usecase "Gérer les badges" as UC_BADGE
+  usecase "Gérer départements / zones" as UC_ORG
+  usecase "Gérer profils et points d'accès" as UC_ACCESS
+  usecase "Consulter événements" as UC_EVENTS
+  usecase "Importer des données" as UC_IMPORT
+  usecase "Traiter les alertes" as UC_ALERT
+  usecase "Consulter le dashboard" as UC_DASH
+  usecase "Utiliser l'analytique IA" as UC_AI
+  usecase "Administrer utilisateurs" as UC_USERS
+}
+
+SA --> UC_LOGIN
+AD --> UC_LOGIN
+AN --> UC_LOGIN
+
+SA --> UC_EMP
+AD --> UC_EMP
+AN --> UC_EMP : lecture
+
+SA --> UC_BADGE
+AD --> UC_BADGE
+AN --> UC_BADGE : lecture
+
+SA --> UC_ORG
+AD --> UC_ORG
+AN --> UC_ORG : lecture
+
+SA --> UC_ACCESS
+AD --> UC_ACCESS
+AN --> UC_ACCESS : lecture
+
+SA --> UC_EVENTS
+AD --> UC_EVENTS
+AN --> UC_EVENTS
+
+SA --> UC_IMPORT
+AD --> UC_IMPORT
+
+SA --> UC_ALERT
+AD --> UC_ALERT
+AN --> UC_ALERT : lecture
+
+SA --> UC_DASH
+AD --> UC_DASH
+AN --> UC_DASH
+
+SA --> UC_AI
+AD --> UC_AI
+AN --> UC_AI
+
+SA --> UC_USERS
+
+@enduml

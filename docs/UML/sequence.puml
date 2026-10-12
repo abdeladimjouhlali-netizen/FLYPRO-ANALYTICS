@@ -1,0 +1,62 @@
+@startuml FlyPro_Sequence
+!theme plain
+skinparam sequenceMessageAlign center
+title FlyPro Analytics — Diagrammes de séquence (Login, Dashboard, Alerte, Import)
+
+actor Utilisateur as U
+participant "React SPA" as FE
+participant "Nginx" as NGX
+participant "Spring Boot\nBackend" as BE
+participant "Security\nFilters" as SEC
+database "MySQL" as DB
+participant "Alert Engine" as AE
+
+== Authentification JWT ==
+U -> FE : Saisie login / mot de passe
+FE -> NGX : POST /api/v1/auth/login
+NGX -> BE : proxy
+BE -> SEC : RateLimitFilter
+SEC -> SEC : LoginAttemptService
+BE -> DB : SELECT user + role
+alt Credentials OK
+  BE -> DB : INSERT refresh_tokens
+  BE --> FE : accessToken + refreshToken + user
+  FE -> FE : localStorage + AuthContext
+else Échec / lock
+  BE --> FE : 401 / 429
+end
+
+== Consultation Dashboard ==
+U -> FE : Ouvre /dashboard
+FE -> NGX : GET /api/v1/dashboard/kpis\nAuthorization: Bearer
+NGX -> BE : proxy
+BE -> SEC : JwtAuthenticationFilter + RBAC
+BE -> DB : agrégations KPI / charts
+BE --> FE : ApiResponse data
+FE -> U : Graphiques Recharts
+
+== Création événement → alerte ==
+U -> FE : POST événement d'accès
+FE -> NGX : POST /api/v1/access-events
+NGX -> BE : proxy
+BE -> DB : INSERT access_events
+BE -> AE : évaluer règles métier
+alt Règle déclenchée
+  AE -> DB : INSERT alerts
+end
+BE --> FE : AccessEventResponse
+
+== Import de données ==
+U -> FE : Upload fichier
+FE -> NGX : POST /api/v1/imports/preview
+NGX -> BE : multipart
+BE -> BE : parse CSV/XLSX/JSON
+BE -> DB : INSERT import_batches + issues
+BE --> FE : preview stats
+U -> FE : Confirmer exécution
+FE -> NGX : POST /api/v1/imports/execute
+NGX -> BE : proxy
+BE -> DB : upsert entités métier
+BE --> FE : ImportSummaryDTO
+
+@enduml

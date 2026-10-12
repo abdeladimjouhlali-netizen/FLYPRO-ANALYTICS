@@ -1,0 +1,97 @@
+# =============================================================================
+# FlyPro Analytics – High Availability overlay (Phase 6 · Step 20)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ha.yml up -d
+#
+# Adds: Redis, RabbitMQ, MySQL read-replica stub, scaled backend/AI via LB notes.
+# Runtime DB remains MySQL (delivered backend). PostgreSQL HA templates live under infra/ha/postgresql.
+# =============================================================================
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: flypro-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - flypro_redis_data:/data
+    networks:
+      - flypro-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: flypro-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-flypro}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-flypro}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - flypro_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - flypro-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  mysql-replica:
+    profiles: ["ha-replica"]
+    image: mysql:8.4
+    container_name: flypro-mysql-replica
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flypro_analytics}
+      MYSQL_USER: ${MYSQL_USER:-flypro}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-flypro}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootflypro}
+    command:
+      - --server-id=2
+      - --relay-log=relay-bin
+      - --read-only=1
+      - --super-read-only=1
+    ports:
+      - "${MYSQL_REPLICA_PORT:-3307}:3306"
+    volumes:
+      - flypro_mysql_replica_data:/var/lib/mysql
+      - ./infra/ha/mysql/replica.cnf:/etc/mysql/conf.d/replica.cnf:ro
+    networks:
+      - flypro-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  backend:
+    environment:
+      REDIS_ENABLED: ${REDIS_ENABLED:-true}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_ENABLED: ${RABBITMQ_ENABLED:-true}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-flypro}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flypro}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-20}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318/v1/traces}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  flypro_redis_data:
+    name: flypro_redis_data
+  flypro_rabbitmq_data:
+    name: flypro_rabbitmq_data
+  flypro_mysql_replica_data:
+    name: flypro_mysql_replica_data

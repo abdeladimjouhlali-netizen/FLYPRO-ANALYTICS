@@ -1,0 +1,52 @@
+# =============================================================================
+# Profil test (H2 en mode PostgreSQL) — migrations H2 dédiées
+# =============================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:flypro;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: true
+    locations: classpath:db/h2-migration
+
+flypro:
+  security:
+    jwt-secret: test-jwt-secret-key-must-be-at-least-32-bytes-long
+    access-token-expiration-ms: 60000
+    refresh-token-expiration-ms: 120000
+    issuer: flypro-analytics-test
+    auth-enabled: true
+    rate-limit:
+      max-requests: 10000
+      window-seconds: 60
+    brute-force:
+      max-attempts: 100
+      lock-seconds: 1
+    api-key:
+      enabled: false
+  mail:
+    enabled: false
+    from: noreply@test.local
+  reports:
+    scheduler-enabled: false
+    default-recipient: admin@test.local
+  redis:
+    enabled: false
+  rabbitmq:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.flypro.analytics: INFO
+    org.springframework.boot.autoconfigure: ERROR

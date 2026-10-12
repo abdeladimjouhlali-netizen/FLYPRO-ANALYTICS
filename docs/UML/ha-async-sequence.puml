@@ -1,0 +1,24 @@
+@startuml ha-async-sequence
+!theme plain
+title Async job publish (RabbitMQ) – graceful if broker down
+
+actor Caller
+participant "AsyncJobService" as S
+participant "AsyncJobPublisher" as P
+participant "RabbitMQ" as R
+participant "Worker / Listener" as W
+
+Caller -> S : enqueueImport(payload)
+S -> P : publishImportJob
+alt RabbitMQ enabled
+  P -> R : convertAndSend(exchange, routingKey, envelope)
+  R -> W : consume queue
+  W --> R : ack / nack → DLQ
+  P --> S : jobId
+else RabbitMQ disabled
+  P -> P : log degrade
+  P --> S : jobId
+end
+S --> Caller : CompletableFuture\<jobId\>
+
+@enduml

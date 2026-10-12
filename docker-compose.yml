@@ -1,0 +1,154 @@
+# =============================================================================
+# FlyPro Analytics – Docker Compose (production-ready local/demo stack)
+#
+# Architecture:
+#   Browser → frontend (Nginx) → backend (Spring Boot) → mysql
+#                            └→ ai-service (FastAPI)
+#
+# Note: the delivered Spring Boot backend uses MySQL (Flyway + dialect).
+# =============================================================================
+
+name: flypro-analytics
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: flypro-mysql
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flypro_analytics}
+      MYSQL_USER: ${MYSQL_USER:-flypro}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-flypro}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootflypro}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - flypro_mysql_data:/var/lib/mysql
+    networks:
+      - flypro-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-rootflypro}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  backend:
+    build:
+      context: ./flypro-backend
+      dockerfile: Dockerfile
+    image: flypro-backend:latest
+    container_name: flypro-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SERVER_PORT: 8080
+      DATABASE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-flypro_analytics}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DATABASE_USERNAME: ${MYSQL_USER:-flypro}
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD:-flypro}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS:-900000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      JWT_ISSUER: ${JWT_ISSUER:-flypro-analytics}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://localhost:3000}
+      AI_SERVICE_URL: http://ai-service:8000
+      LOG_FILE: /var/log/flypro/backend.log
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-30}
+      AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
+      AUTH_BRUTE_FORCE_MAX: ${AUTH_BRUTE_FORCE_MAX:-5}
+      AUTH_BRUTE_FORCE_LOCK_SECONDS: ${AUTH_BRUTE_FORCE_LOCK_SECONDS:-300}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-20}
+      DB_POOL_MIN_IDLE: ${DB_POOL_MIN_IDLE:-5}
+    volumes:
+      - flypro_backend_logs:/var/log/flypro
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - flypro-net
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health/liveness"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+  ai-service:
+    build:
+      context: ./flypro-ai
+      dockerfile: Dockerfile
+    image: flypro-ai:latest
+    container_name: flypro-ai
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MODELS_DIR: /app/artifacts/models
+      LOG_LEVEL: ${AI_LOG_LEVEL:-INFO}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://localhost:3000,http://127.0.0.1}
+    volumes:
+      - flypro_ai_models:/app/artifacts/models
+    ports:
+      - "${AI_PORT:-8000}:8000"
+    networks:
+      - flypro-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ai/health', timeout=4)"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./flypro-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_AI_BASE_URL: ${VITE_AI_BASE_URL:-/ai-api}
+    image: flypro-frontend:latest
+    container_name: flypro-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./flypro-frontend/certs:/etc/nginx/certs:ro
+    networks:
+      - flypro-net
+    depends_on:
+      backend:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+
+  adminer:
+    profiles: ["tools"]
+    image: adminer:4
+    container_name: flypro-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    networks:
+      - flypro-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+networks:
+  flypro-net:
+    name: flypro-net
+    driver: bridge
+
+volumes:
+  flypro_mysql_data:
+    name: flypro_mysql_data
+  flypro_backend_logs:
+    name: flypro_backend_logs
+  flypro_ai_models:
+    name: flypro_ai_models

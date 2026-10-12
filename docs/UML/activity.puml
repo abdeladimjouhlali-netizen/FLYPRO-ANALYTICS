@@ -1,0 +1,48 @@
+@startuml FlyPro_Activity_Import
+!theme plain
+title FlyPro Analytics — Diagramme d'activité (Import de données)
+
+start
+
+:Sélectionner un fichier\n(CSV / XLSX / JSON);
+:POST /api/v1/imports/upload ou /preview;
+
+if (Format supporté ?) then (non)
+  :Erreur UNSUPPORTED_FILE_TYPE;
+  stop
+else (oui)
+endif
+
+:Parser le fichier;
+:Créer ImportBatch (status = PREVIEW/VALIDATING);
+:Valider chaque ligne\n(unicité, FK, formats);
+
+fork
+  :Compter validRecords;
+fork again
+  :Compter invalidRecords +\nDataQualityIssue;
+fork again
+  :Compter duplicateRecords;
+end fork
+
+:Afficher rapport de prévisualisation;
+
+if (Utilisateur confirme ?) then (non)
+  :Abandon;
+  stop
+else (oui)
+endif
+
+:POST /api/v1/imports/execute;
+:Persister entités valides;
+:Mettre à jour ImportBatch\n(status = COMPLETED / PARTIAL / FAILED);
+
+if (invalidRecords > 0 ?) then (oui)
+  :Déclencher ImportQualityRule\n→ Alerte SYSTEM_WARNING;
+else (non)
+endif
+
+:Afficher ImportSummaryDTO;
+stop
+
+@enduml

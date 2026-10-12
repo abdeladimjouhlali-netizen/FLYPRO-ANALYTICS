@@ -1,0 +1,14 @@
+# Redis HA / Sentinel notes (Phase 6)
+# Single-node Compose service is fine for staging.
+# Production: Redis Sentinel or managed Redis (ElastiCache / Azure Cache).
+
+# redis.conf excerpt
+# maxmemory 512mb
+# maxmemory-policy allkeys-lru
+# appendonly yes
+# requirepass ${REDIS_PASSWORD}
+
+# Sentinel example:
+# sentinel monitor flypro-master redis-master 6379 2
+# sentinel down-after-milliseconds flypro-master 5000
+# sentinel failover-timeout flypro-master 10000

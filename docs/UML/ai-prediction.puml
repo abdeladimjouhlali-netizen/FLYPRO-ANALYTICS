@@ -1,0 +1,48 @@
+@startuml FlyPro_AI_Prediction
+!theme plain
+skinparam activityDiamondFontSize 11
+title FlyPro Analytics — Flux de prédiction IA (Isolation Forest)
+
+start
+
+:Client POST /api/v1/ai/predict\n{ event: AccessEventFeatures };
+
+if (Modèle chargé en mémoire ?) then (non)
+  :ModelRegistry.load_latest();
+  if (Artefact trouvé ?) then (non)
+    :Erreur MODEL_NOT_LOADED;
+    stop
+  else (oui)
+  endif
+else (oui)
+endif
+
+:Feature engineering\n(10 features temporelles / IDs / codes);
+:StandardScaler.transform;
+:IsolationForest.predict + decision_function;
+
+fork
+  :ml_label (-1 anomalie / 1 normal);
+  :anomalyScore = decision_function;
+  :ml_risk = clip(0.5 - decision, 0, 1);
+fork again
+  :BusinessRulesEngine.evaluate\n(horaires, badge, zone, fréquence…);
+  :severity + ruleFlags + reasons;
+end fork
+
+:Fusion risk_score =\nmax(ml_risk, severity)\n(+ pondération si règles actives);
+
+if (raw_label == -1\nOU severity >= 0.35\nOU risk >= 0.65 ?) then (oui)
+  :prediction = ANOMALY;
+else (non)
+  :prediction = NORMAL;
+endif
+
+:Calcul confidence [50 – 99.9];
+:recommendedAction\n(NONE → MONITOR → REVIEW → INVESTIGATE → BLOCK);
+
+:Retourner PredictResponse\n(prediction, riskScore, confidence,\nreason, ruleFlags, modelVersion);
+
+stop
+
+@enduml

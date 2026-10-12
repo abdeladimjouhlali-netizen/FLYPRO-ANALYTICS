@@ -1,0 +1,26 @@
+# =============================================================================
+# FlyPro Analytics – application-dev.yml
+# Rôle : profil de développement local (PostgreSQL Docker, SQL visible, etc.).
+# =============================================================================
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:flypro_analytics}
+    username: ${DB_USER:flypro}
+    password: ${DB_PASSWORD:flypro}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    baseline-on-migrate: true
+
+logging:
+  level:
+    root: INFO
+    com.flypro.analytics: DEBUG
+    org.hibernate.SQL: DEBUG

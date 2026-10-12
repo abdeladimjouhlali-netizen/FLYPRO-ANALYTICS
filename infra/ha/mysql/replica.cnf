@@ -1,0 +1,9 @@
+# MySQL replica read-only
+[mysqld]
+server-id=2
+relay-log=relay-bin
+read_only=1
+super_read_only=1
+gtid-mode=ON
+enforce-gtid-consistency=ON
+max_connections=200

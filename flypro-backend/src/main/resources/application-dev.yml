@@ -1,0 +1,57 @@
+# =============================================================================
+# FlyPro Analytics – application-dev.yml (local JVM, sans Docker)
+# =============================================================================
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/flypro_analytics?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DATABASE_USERNAME:flypro}
+    password: ${DATABASE_PASSWORD:flypro}
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+flypro:
+  security:
+    # >= 32 bytes required for HS256
+    jwt-secret: ${JWT_SECRET:dev-only-change-me-not-for-production-use-32b+}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+    # DEV ONLY — JWT actif pour le portail employé (login admin + employé)
+    auth-enabled: true
+    dev-bypass-username: admin
+  # Local focus: backend + frontend only (AI / Redis / RabbitMQ later)
+  redis:
+    enabled: false
+  rabbitmq:
+    enabled: false
+  mail:
+    enabled: false
+  reports:
+    scheduler-enabled: false
+  ai-service:
+    base-url: ${AI_SERVICE_URL:http://localhost:8000}
+
+management:
+  health:
+    # MailHog / SMTP not required in local mode
+    mail:
+      enabled: false
+    # AI circuit breaker health noise when AI is offline
+    circuitbreakers:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+logging:
+  level:
+    com.flypro.analytics: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.security: INFO

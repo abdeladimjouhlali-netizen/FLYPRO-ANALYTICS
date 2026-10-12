@@ -1,0 +1,59 @@
+@startuml FlyPro_Package
+!theme plain
+title FlyPro Analytics — Diagramme de packages
+
+package "flypro-frontend" {
+  package "src.features" as FEAT
+  package "src.api" as API_FE
+  package "src.contexts" as CTX
+  package "src.components" as COMP
+  package "src.routes" as ROUTES
+}
+
+package "flypro-backend\ncom.flypro.analytics" {
+  package "auth" as AUTH
+  package "employee" as EMP
+  package "badge" as BADGE
+  package "department" as DEPT
+  package "zone" as ZONE
+  package "accessprofile" as APROF
+  package "accesspoint" as AP
+  package "accessevent" as AEVT
+  package "importbatch" as IMP
+  package "alert" as ALERT
+  package "dashboard" as DASH
+  package "security" as SEC
+  package "config" as CFG
+  package "common" as COM
+}
+
+package "flypro-ai\napp" {
+  package "api" as AI_API
+  package "ml" as ML
+  package "services" as AI_SVC
+  package "schemas" as SCH
+  package "core" as AI_CORE
+}
+
+FEAT --> API_FE
+FEAT --> CTX
+FEAT --> COMP
+ROUTES --> FEAT
+API_FE ..> AUTH : REST
+API_FE ..> EMP : REST
+API_FE ..> AI_API : REST AI
+
+AUTH --> SEC
+EMP --> COM
+BADGE --> COM
+ALERT --> AEVT
+DASH --> AEVT
+IMP --> EMP
+CFG --> SEC
+
+AI_API --> AI_SVC
+AI_SVC --> ML
+AI_API --> SCH
+AI_SVC --> AI_CORE
+
+@enduml

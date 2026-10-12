@@ -1,0 +1,47 @@
+@startuml FlyPro_AuthFlow
+!theme plain
+title FlyPro Analytics — Flux d'authentification JWT
+
+actor Client
+participant "RateLimitFilter" as RL
+participant "AuthController" as AC
+participant "LoginAttemptService" as LA
+participant "AuthenticationManager" as AM
+participant "JwtService" as JWT
+database "MySQL" as DB
+participant "JwtAuthenticationFilter" as JF
+participant "API Controller" as API
+
+== Login ==
+Client -> RL : POST /auth/login
+RL -> AC : OK (sinon 429)
+AC -> LA : assertNotLocked(username)
+AC -> AM : authenticate(username, password)
+alt credentials OK
+  AM -> DB : load user + role
+  AC -> JWT : generateAccess + generateRefresh
+  AC -> DB : save refresh_token
+  AC -> LA : loginSucceeded
+  AC --> Client : tokens + user
+else BadCredentials
+  AC -> LA : loginFailed
+  AC --> Client : 401
+end
+
+== Appel API protégé ==
+Client -> JF : Authorization Bearer access
+JF -> JWT : validate ACCESS token
+JF -> JF : set SecurityContext
+JF -> API : continue filter chain
+API --> Client : 200 / 403
+
+== Refresh ==
+Client -> RL : POST /auth/refresh
+RL -> AC : OK
+AC -> JWT : validate REFRESH
+AC -> DB : find + revoke old
+AC -> JWT : new tokens
+AC -> DB : persist new refresh
+AC --> Client : new tokens
+
+@enduml

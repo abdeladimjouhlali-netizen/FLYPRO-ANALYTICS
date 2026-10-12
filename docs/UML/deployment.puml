@@ -1,0 +1,29 @@
+@startuml FlyPro_Deployment
+!theme plain
+title FlyPro Analytics — Diagramme de déploiement (Docker Compose)
+
+node "Docker Host" {
+  node "flypro-net (bridge)" {
+    artifact "flypro-frontend\nNginx:80" as FE
+    artifact "flypro-backend\nJRE21:8080" as BE
+    artifact "flypro-ai\nPython:8000" as AIS
+    database "flypro-mysql\n:3306" as DB
+  }
+  cloud "Volumes" {
+    storage "flypro_mysql_data" as V1
+    storage "flypro_backend_logs" as V2
+    storage "flypro_ai_models" as V3
+  }
+}
+
+actor Browser
+Browser --> FE : :80
+FE --> BE
+FE --> AIS
+BE --> DB
+BE --> AIS
+DB --> V1
+BE --> V2
+AIS --> V3
+
+@enduml

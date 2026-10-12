@@ -1,0 +1,10 @@
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.git/
+.idea/
+artifacts/models/*.joblib
+artifacts/models/latest.json
+*.pyc
+.env

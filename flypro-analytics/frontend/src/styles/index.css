@@ -1,0 +1,20 @@
+/**
+ * FlyPro Analytics – styles globaux (Tailwind CSS v4)
+ * Rôle : base visuelle ; composants Shadcn UI seront ajoutés plus tard.
+ */
+@import "tailwindcss";
+
+:root {
+  /* Variables design system — à enrichir lors de l'UI */
+  --color-brand: #0f4c81;
+  --color-surface: #f7f9fc;
+  --color-ink: #0b1f33;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--color-ink);
+  background: var(--color-surface);
+}

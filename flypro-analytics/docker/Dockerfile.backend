@@ -1,0 +1,22 @@
+# =============================================================================
+# FlyPro Analytics – Dockerfile.backend
+# Rôle : image multi-stage Maven → JRE 21 pour le backend Spring Boot.
+# Aucune logique métier ; build du JAR produit par le module backend.
+# =============================================================================
+
+# --- Build ---
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+WORKDIR /workspace
+COPY backend/pom.xml ./
+COPY backend/src ./src
+RUN mvn -q -DskipTests package
+
+# --- Runtime ---
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+# Utilisateur non-root (bonne pratique production)
+RUN addgroup -S flypro && adduser -S flypro -G flypro
+USER flypro
+COPY --from=build /workspace/target/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

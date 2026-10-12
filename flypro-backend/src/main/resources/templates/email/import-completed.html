@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Import completed</title></head>
+<body style="font-family:Segoe UI,Arial,sans-serif;padding:24px;">
+  <h2>Import completed</h2>
+  <p>File: <strong th:text="${fileName}">file.csv</strong></p>
+  <ul>
+    <li>Valid records: <span th:text="${valid}">0</span></li>
+    <li>Invalid records: <span th:text="${invalid}">0</span></li>
+  </ul>
+</body>
+</html>
